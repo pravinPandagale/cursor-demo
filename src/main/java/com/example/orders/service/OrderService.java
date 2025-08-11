@@ -55,7 +55,7 @@ public class OrderService {
     }
     
     @Transactional(readOnly = true)
-    public List<OrderResponse> getOrdersByCustomerName(String customerName) {
+    public List<OrderResponse> searchByCustomerName(String customerName) {
         log.info("Fetching orders for customer: {}", customerName);
         
         return orderRepository.findByCustomerNameContainingIgnoreCase(customerName)
@@ -65,8 +65,16 @@ public class OrderService {
     }
     
     @Transactional(readOnly = true)
-    public List<OrderResponse> getOrdersByAmountRange(BigDecimal minAmount, BigDecimal maxAmount) {
+    public List<OrderResponse> searchByAmountRange(BigDecimal minAmount, BigDecimal maxAmount) {
         log.info("Fetching orders with amount between {} and {}", minAmount, maxAmount);
+        
+        if (minAmount == null || maxAmount == null) {
+            throw new IllegalArgumentException("Both minAmount and maxAmount must be provided");
+        }
+        
+        if (minAmount.compareTo(maxAmount) > 0) {
+            throw new IllegalArgumentException("minAmount cannot be greater than maxAmount");
+        }
         
         return orderRepository.findByAmountBetween(minAmount, maxAmount)
                 .stream()
