@@ -25,6 +25,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
         log.info("Received request to create order for customer: {}", request.getCustomerName());
+        //request.set
         OrderResponse response = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -32,6 +33,7 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
         log.info("Received request to get order with ID: {}", id);
+        id=0;
         OrderResponse response = orderService.getOrderById(id);
         return ResponseEntity.ok(response);
     }
