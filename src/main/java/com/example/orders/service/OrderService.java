@@ -6,6 +6,9 @@ import com.example.orders.entity.Order;
 import com.example.orders.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final CacheService cacheService;
     
     public OrderResponse createOrder(OrderRequest request) {
         log.info("Creating new order for customer: {}", request.getCustomerName());
@@ -31,17 +35,34 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully with ID: {}", savedOrder.getId());
         
-        return mapToResponse(savedOrder);
+        OrderResponse response = mapToResponse(savedOrder);
+        // Cache the newly created order
+        cacheService.cacheOrder(response);
+        return response;
     }
     
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id) {
         log.info("Fetching order with ID: {}", id);
         
+        // First, try to get from cache
+        OrderResponse cachedOrder = cacheService.getCachedOrder(id);
+        if (cachedOrder != null) {
+            log.info("Order with ID: {} retrieved from cache", id);
+            return cachedOrder;
+        }
+        
+        // If not in cache, get from database
+        log.info("Order with ID: {} not found in cache, fetching from database", id);
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
         
-        return mapToResponse(order);
+        OrderResponse response = mapToResponse(order);
+        // Cache the order for future requests
+        cacheService.cacheOrder(response);
+        log.info("Order with ID: {} cached for future requests", id);
+        
+        return response;
     }
     
     @Transactional(readOnly = true)
@@ -94,7 +115,12 @@ public class OrderService {
         Order updatedOrder = orderRepository.save(order);
         log.info("Order updated successfully with ID: {}", updatedOrder.getId());
         
-        return mapToResponse(updatedOrder);
+        OrderResponse response = mapToResponse(updatedOrder);
+        // Update the cache with the new order data
+        cacheService.cacheOrder(response);
+        log.info("Order with ID: {} updated in cache", id);
+        
+        return response;
     }
     
     public void deleteOrder(Long id) {
@@ -105,7 +131,9 @@ public class OrderService {
         }
         
         orderRepository.deleteById(id);
-        log.info("Order deleted successfully with ID: {}", id);
+        // Remove the order from cache
+        cacheService.evictOrder(id);
+        log.info("Order deleted successfully with ID: {} and removed from cache", id);
     }
     
     private OrderResponse mapToResponse(Order order) {

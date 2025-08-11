@@ -27,10 +27,28 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
   
+  # Redis Configuration
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
   jackson:
     default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false
+
+# Cache Configuration
+cache:
+  redis:
+    ttl: 30m
+    max-entries: 1000
 
 logging:
   level:
@@ -38,6 +56,7 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.cache: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 

@@ -3,6 +3,7 @@ package com.example.orders.controller;
 import com.example.orders.dto.OrderRequest;
 import com.example.orders.dto.OrderResponse;
 import com.example.orders.service.OrderService;
+import com.example.orders.service.CacheService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.util.List;
 public class OrderController {
     
     private final OrderService orderService;
+    private final CacheService cacheService;
     
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
@@ -78,5 +80,26 @@ public class OrderController {
     public ResponseEntity<String> healthCheck() {
         log.info("Health check endpoint called");
         return ResponseEntity.ok("Orders microservice is running!");
+    }
+    
+    // Cache Management Endpoints
+    @PostMapping("/cache/evict/{id}")
+    public ResponseEntity<String> evictOrderFromCache(@PathVariable @NotNull Long id) {
+        log.info("Received request to evict order with ID: {} from cache", id);
+        cacheService.evictOrder(id);
+        return ResponseEntity.ok("Order with ID " + id + " evicted from cache");
+    }
+    
+    @PostMapping("/cache/evict/all")
+    public ResponseEntity<String> evictAllOrdersFromCache() {
+        log.info("Received request to evict all orders from cache");
+        cacheService.evictAllOrders();
+        return ResponseEntity.ok("All orders evicted from cache");
+    }
+    
+    @GetMapping("/cache/status")
+    public ResponseEntity<String> getCacheStatus() {
+        log.info("Received request for cache status");
+        return ResponseEntity.ok("Redis cache is enabled and configured");
     }
 }
